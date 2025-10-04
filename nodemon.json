@@ -1,0 +1,5 @@
+{
+    "watch": ["src"],
+    "ext": "ts",
+    "exec": "esbuild src/**/*.ts --outdir=dist --platform=node && node --env-file=.env dist/server.js"
+}
