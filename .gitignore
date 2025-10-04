@@ -1,0 +1,11 @@
+# Compiled output
+dist
+
+# Node
+node_modules
+
+# IDEs and editors
+.idea
+
+# Environment variables file
+.env
