@@ -9,9 +9,9 @@ import { getRequest, createRequest, updateRequest, deleteRequest } from "./reque
 
 const requestRouter = Router();
 
-requestRouter.get("/:id", getRequest);
+requestRouter.get("/:requestId", getRequest);
 requestRouter.post("/", createRequest);
-requestRouter.patch("/:id", updateRequest);
-requestRouter.delete("/:id", deleteRequest);
+requestRouter.patch("/:requestId", updateRequest);
+requestRouter.delete("/:requestId", deleteRequest);
 
 export { requestRouter };
