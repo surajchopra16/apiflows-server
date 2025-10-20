@@ -22,7 +22,4 @@ client.on("connectionClosed", () => console.log("MongoDB disconnected"));
 
 const db = client.db("apiflow");
 
-const collectionsCollection = db.collection("collections");
-const requestsCollection = db.collection("requests");
-
-export { collectionsCollection, requestsCollection };
+export { db };
