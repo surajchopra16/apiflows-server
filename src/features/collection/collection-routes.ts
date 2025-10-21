@@ -2,10 +2,13 @@
 import { Router } from "express";
 
 import {
-    getCollection,
+    getCollections,
     createCollection,
-    updateCollection,
-    deleteCollection
+    renameCollection,
+    deleteCollection,
+    createFolder,
+    renameFolder,
+    deleteFolder
 } from "./collection-controller.js";
 
 /**
@@ -14,9 +17,13 @@ import {
 
 const collectionRouter = Router();
 
-collectionRouter.get("/:id", getCollection);
+collectionRouter.get("/", getCollections);
 collectionRouter.post("/", createCollection);
-collectionRouter.patch("/:id", updateCollection);
-collectionRouter.delete("/:id", deleteCollection);
+collectionRouter.patch("/:collectionId", renameCollection);
+collectionRouter.delete("/:collectionId", deleteCollection);
+
+collectionRouter.post("/:collectionId/folders", createFolder);
+collectionRouter.patch("/:collectionId/folders/:folderId", renameFolder);
+collectionRouter.delete("/:collectionId/folders/:folderId", deleteFolder);
 
 export { collectionRouter };
