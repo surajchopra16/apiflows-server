@@ -99,6 +99,7 @@ export {
     Body,
     Request,
     httpMethodEnum,
+    bodySchema,
     createRequestSchema,
     updateRequestSchema,
     requestsCollection

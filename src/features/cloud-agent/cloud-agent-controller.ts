@@ -41,17 +41,7 @@ const sendRequest: RequestHandler = async (req, res) => {
     res.status(200).json({
         status: "success",
         message: "Request executed successfully",
-        data: {
-            response: {
-                statusCode: upstreamResponse.statusCode,
-                statusMessage: upstreamResponse.statusMessage,
-                duration: upstreamResponse.duration,
-                size: upstreamResponse.size,
-                headers: upstreamResponse.headers,
-                body: upstreamResponse.body,
-                serializedCookieJar: upstreamResponse.serializedCookieJar
-            }
-        }
+        data: { response: upstreamResponse }
     });
 };
 

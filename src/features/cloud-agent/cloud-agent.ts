@@ -27,12 +27,21 @@ type UpstreamRequest = {
 /** Upstream response type */
 type UpstreamResponse = {
     statusCode: number;
-    statusMessage: string | null;
-    duration: number;
-    size: number;
+    statusMessage: string;
     headers: Record<string, string>;
-    body: { encoding: string; type: string; value: any };
+    body: { encoding: string; type: string; value: string };
     serializedCookieJar: string;
+    timings: {
+        wait: number;
+        dns: number;
+        tcp: number;
+        tls: number;
+        request: number;
+        firstByte: number;
+        download: number;
+        total: number;
+    };
+    size: number;
 };
 
 /** Hop by hop headers that should be removed */
@@ -151,18 +160,19 @@ function sanitizeHeaders(headers: Record<string, string>) {
 }
 
 /**
- * Parse the response body based on content-type and content
+ * Process the response body based on content-type and content
  * @param buffer The response body buffer
  * @param contentTypeHeader The content-type header
  */
 
-const parseBody = (buffer: Buffer, contentTypeHeader: string) => {
+const processBody = (buffer: Buffer, contentTypeHeader: string): UpstreamResponse["body"] => {
     // Parse the content-type header
     const { type, parameters } = contentTypeHeader
         ? parse(contentTypeHeader)
         : { type: "", parameters: {} };
 
     const mediaType = type.toLowerCase();
+
     let charset = (parameters.charset || "utf-8").toLowerCase();
     if (!iconv.encodingExists(charset)) charset = "utf-8";
 
@@ -176,7 +186,7 @@ const parseBody = (buffer: Buffer, contentTypeHeader: string) => {
         (!contentTypeHeader && (text.startsWith("{") || text.startsWith("[")))
     ) {
         try {
-            const json = JSON.parse(text);
+            const json = JSON.stringify(JSON.parse(text), null, 4);
             return { encoding: "utf8", type: "json", value: json };
         } catch {
             return { encoding: "utf8", type: "text", value: text };
@@ -225,8 +235,26 @@ const parseBody = (buffer: Buffer, contentTypeHeader: string) => {
         return { encoding: "base64", type: "binary", value: buffer.toString("base64") };
     }
 
-    // RAW fallback
+    // RAW (Fallback)
     return { encoding: "base64", type: "raw", value: buffer.toString("base64") };
+};
+
+/**
+ * Extract the timings information from the got stream
+ * @param stream The got stream
+ */
+
+const extractTimings = (stream: any): UpstreamResponse["timings"] => {
+    return {
+        wait: stream.timings?.phases.wait ?? 0,
+        dns: stream.timings?.phases.dns ?? 0,
+        tcp: stream.timings?.phases.tcp ?? 0,
+        tls: stream.timings?.phases.tls ?? 0,
+        request: stream.timings?.phases.request ?? 0,
+        firstByte: stream.timings?.phases.firstByte ?? 0,
+        download: stream.timings?.phases.download ?? 0,
+        total: stream.timings?.phases.total ?? 0
+    };
 };
 
 /**
@@ -240,8 +268,6 @@ const parseBody = (buffer: Buffer, contentTypeHeader: string) => {
  */
 
 const executeUpstreamRequest = async (request: UpstreamRequest): Promise<UpstreamResponse> => {
-    const startTime = Date.now();
-
     // Check for the SSRF attack
     await validateSSRF(request.url);
 
@@ -249,14 +275,20 @@ const executeUpstreamRequest = async (request: UpstreamRequest): Promise<Upstrea
     const headers = sanitizeHeaders(request.headers);
 
     // Handle the body
-    let body = undefined;
+    let body: string | undefined = undefined;
 
     if (request.body.type === "raw:text") {
         body = request.body.value;
         headers["content-type"] = "text/plain;charset=utf-8";
+        headers["content-length"] = Buffer.byteLength(body).toString();
     } else if (request.body.type === "raw:json") {
         body = request.body.value;
         headers["content-type"] = "application/json";
+        headers["content-length"] = Buffer.byteLength(body).toString();
+    } else if (request.body.type === "none" && ["POST", "PUT", "PATCH"].includes(request.method)) {
+        body = "";
+        headers["content-type"] = "text/plain;charset=utf-8";
+        headers["content-length"] = "0";
     }
 
     // Handle the cookie jar
@@ -270,19 +302,21 @@ const executeUpstreamRequest = async (request: UpstreamRequest): Promise<Upstrea
         }
     } else cookieJar = new CookieJar();
 
-    return await new Promise((resolve, reject) => {
-        // Send the HTTP request (streaming)
+    return await new Promise((resolve) => {
+        // Send the HTTP request
         const stream = got({
             url: request.url,
             method: request.method,
             searchParams: request.queryParams,
             headers: headers,
-            ...(body && { body }),
+            body: body,
             cookieJar: cookieJar,
             timeout: { request: request.timeout },
             followRedirect: request.followRedirect,
             maxRedirects: request.maxRedirects,
             https: { rejectUnauthorized: request.validateSSL },
+            ...(request.method === "GET" && request.body.type !== "none" && { allowGetBody: true }), // Allow body in GET request
+            throwHttpErrors: false, // We want to handle HTTP errors ourselves
             retry: { limit: 0 }, // Disable retries
             responseType: "buffer", // We want a buffer to handle different content types
             resolveBodyOnly: false, // We want a full response
@@ -290,19 +324,21 @@ const executeUpstreamRequest = async (request: UpstreamRequest): Promise<Upstrea
             isStream: true
         });
 
-        // Handle the response stream
+        // Handle the stream
         let size = 0;
         let chunks: Buffer[] = [];
 
         let statusCode = 0;
-        let statusMessage: string | null = null;
+        let statusMessage = "";
         let upstreamHeaders: Record<string, any> = {};
 
+        // Stream for the first time to byte (TTFB)
         stream.on("response", (res) => {
-            statusCode = res.statusCode || 0;
-            statusMessage = res.statusMessage || null;
+            statusCode = res.statusCode || 500;
+            statusMessage = res.statusMessage || "Something went wrong!";
             upstreamHeaders = res.headers;
 
+            // Handle the set-cookie headers
             const setCookie = res.headers["set-cookie"];
             if (setCookie) {
                 const cookies = Array.isArray(setCookie) ? setCookie : [setCookie];
@@ -312,6 +348,7 @@ const executeUpstreamRequest = async (request: UpstreamRequest): Promise<Upstrea
             }
         });
 
+        // Stream for the response body
         stream.on("data", (chunk) => {
             size += chunk.length;
 
@@ -320,25 +357,39 @@ const executeUpstreamRequest = async (request: UpstreamRequest): Promise<Upstrea
             else chunks.push(chunk);
         });
 
+        // Stream for the end of the response
         stream.on("end", () => {
-            const duration = Date.now() - startTime;
-
             const buffer = Buffer.concat(chunks);
             const contentType = upstreamHeaders["content-type"] || "";
-            const body = parseBody(buffer, contentType);
+            const body = processBody(buffer, contentType);
 
             resolve({
                 statusCode,
                 statusMessage,
-                duration,
-                size,
                 headers: upstreamHeaders,
                 body,
-                serializedCookieJar: JSON.stringify(cookieJar.serializeSync())
+                serializedCookieJar: JSON.stringify(cookieJar.serializeSync()),
+                timings: extractTimings(stream),
+                size
             });
         });
 
-        stream.on("error", (err) => reject(err));
+        // Stream for the error only (no HTTP errors)
+        stream.on("error", (err: any) => {
+            statusCode = 500;
+            statusMessage = err?.code || "Internal Server Error";
+            upstreamHeaders = err.response?.headers || {};
+
+            resolve({
+                statusCode,
+                statusMessage,
+                headers: upstreamHeaders,
+                body: { encoding: "utf8", type: "text", value: err.message },
+                serializedCookieJar: JSON.stringify(cookieJar.serializeSync()),
+                timings: extractTimings(stream),
+                size
+            });
+        });
     });
 };
 

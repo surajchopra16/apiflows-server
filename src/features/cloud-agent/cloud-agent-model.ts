@@ -1,14 +1,7 @@
 /** Imported modules */
-import { z, object, record, string, url } from "zod";
+import { object, record, string, url } from "zod";
 
-/** Method enum */
-const methodEnum = z.enum(["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]);
-
-/** Body schema */
-const bodySchema = object({
-    type: z.enum(["none", "raw:text", "raw:json"]),
-    value: string()
-});
+import { bodySchema, httpMethodEnum } from "../request/request-model.js";
 
 /**
  * ==================== Schemas ====================>
@@ -17,7 +10,7 @@ const bodySchema = object({
 /** Request schema */
 const requestSchema = object({
     url: url(),
-    method: methodEnum,
+    method: httpMethodEnum,
     queryParams: record(string(), string()),
     headers: record(string(), string()),
     body: bodySchema,
