@@ -1,6 +1,8 @@
 /** Imported modules */
 import { Router } from "express";
 
+import { authMiddleware } from "../../middlewares/auth.js";
+
 import { getRequest, createRequest, updateRequest, deleteRequest } from "./request-controller.js";
 
 /**
@@ -9,9 +11,9 @@ import { getRequest, createRequest, updateRequest, deleteRequest } from "./reque
 
 const requestRouter = Router();
 
-requestRouter.get("/:requestId", getRequest);
-requestRouter.post("/", createRequest);
-requestRouter.patch("/:requestId", updateRequest);
-requestRouter.delete("/:requestId", deleteRequest);
+requestRouter.get("/:requestId", authMiddleware, getRequest);
+requestRouter.post("/", authMiddleware, createRequest);
+requestRouter.patch("/:requestId", authMiddleware, updateRequest);
+requestRouter.delete("/:requestId", authMiddleware, deleteRequest);
 
 export { requestRouter };

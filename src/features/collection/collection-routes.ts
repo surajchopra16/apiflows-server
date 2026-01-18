@@ -1,6 +1,8 @@
 /** Imported modules */
 import { Router } from "express";
 
+import { authMiddleware } from "../../middlewares/auth.js";
+
 import {
     getCollections,
     createCollection,
@@ -17,13 +19,13 @@ import {
 
 const collectionRouter = Router();
 
-collectionRouter.get("/", getCollections);
-collectionRouter.post("/", createCollection);
-collectionRouter.patch("/:collectionId", renameCollection);
-collectionRouter.delete("/:collectionId", deleteCollection);
+collectionRouter.get("/", authMiddleware, getCollections);
+collectionRouter.post("/", authMiddleware, createCollection);
+collectionRouter.patch("/:collectionId", authMiddleware, renameCollection);
+collectionRouter.delete("/:collectionId", authMiddleware, deleteCollection);
 
-collectionRouter.post("/:collectionId/folders", createFolder);
-collectionRouter.patch("/:collectionId/folders/:folderId", renameFolder);
-collectionRouter.delete("/:collectionId/folders/:folderId", deleteFolder);
+collectionRouter.post("/:collectionId/folders", authMiddleware, createFolder);
+collectionRouter.patch("/:collectionId/folders/:folderId", authMiddleware, renameFolder);
+collectionRouter.delete("/:collectionId/folders/:folderId", authMiddleware, deleteFolder);
 
 export { collectionRouter };

@@ -1,6 +1,8 @@
 /** Imported modules */
 import { Router } from "express";
 
+import { authMiddleware } from "../../middlewares/auth.js";
+
 import { sendRequest } from "./cloud-agent-controller.js";
 
 /**
@@ -9,6 +11,6 @@ import { sendRequest } from "./cloud-agent-controller.js";
 
 const cloudAgentRouter = Router();
 
-cloudAgentRouter.post("/request", sendRequest);
+cloudAgentRouter.post("/request", authMiddleware, sendRequest);
 
 export { cloudAgentRouter };
