@@ -16,7 +16,11 @@ const envSchema = object({
 
     /** MongoDB */
     DB_CONNECTION_STRING: string(),
-    DB_PASSWORD: string()
+    DB_PASSWORD: string(),
+
+    /** JWT */
+    JWT_SECRET: string(),
+    JWT_EXPIRES_IN: string()
 });
 
 /**

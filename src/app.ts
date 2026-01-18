@@ -1,6 +1,7 @@
 /** Imported modules */
 import express, { Request, Response, NextFunction } from "express";
 
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
@@ -9,6 +10,7 @@ import { prettifyError, ZodError } from "zod";
 import { cloudAgentRouter } from "./features/cloud-agent/cloud-agent-routes.js";
 import { collectionRouter } from "./features/collection/collection-routes.js";
 import { requestRouter } from "./features/request/request-routes.js";
+import { userRouter } from "./features/user/user-routes.js";
 
 import { HttpError } from "./utils/httpError.js";
 
@@ -49,9 +51,16 @@ if (process.env.NODE_ENV === "development") app.use(morgan("dev"));
 app.use(express.json());
 
 /**
+ * Cookie parser middleware
+ */
+
+app.use(cookieParser());
+
+/**
  * App routes
  */
 
+app.use("/api/v1/users", userRouter);
 app.use("/api/v1/cloud-agent", cloudAgentRouter);
 app.use("/api/v1/collections", collectionRouter);
 app.use("/api/v1/requests", requestRouter);
