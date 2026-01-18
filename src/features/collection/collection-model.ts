@@ -11,7 +11,12 @@ type RequestNode = { _id: string; name: string; type: "request"; method: HttpMet
 type FolderNode = { _id: string; name: string; type: "folder"; children: RequestNode[] };
 
 /** Collection node type */
-type CollectionNode = { name: string; type: "collection"; children: (FolderNode | RequestNode)[] };
+type CollectionNode = {
+    userId: string;
+    name: string;
+    type: "collection";
+    children: (FolderNode | RequestNode)[];
+};
 
 /**
  * ==================== Schemas ====================>

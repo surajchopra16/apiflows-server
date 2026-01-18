@@ -18,6 +18,7 @@ type Body = { type: "none" | "raw:text" | "raw:json"; value: string };
 
 /** Request type */
 type Request = {
+    userId: string;
     name: string;
     url: string;
     method: HttpMethod;

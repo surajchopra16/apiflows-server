@@ -11,11 +11,14 @@ import { objectIdSchema } from "../../utils/schema.js";
 
 /** Get the request */
 const getRequest: RequestHandler = async (req, res) => {
+    // Get userId from the authenticated user
+    const userId = req.user!.userId;
+
     // Parse the request param for the request id
     const requestId = objectIdSchema.parse(req.params.requestId);
 
     // Find the request document
-    const request = await requestsCollection.findOne({ _id: new ObjectId(requestId) });
+    const request = await requestsCollection.findOne({ _id: new ObjectId(requestId), userId });
     if (!request) throw new HttpError("Request not found", 404);
 
     // Remove the createdAt and updatedAt fields
@@ -30,11 +33,14 @@ const getRequest: RequestHandler = async (req, res) => {
 
 /** Create a new request */
 const createRequest: RequestHandler = async (req, res) => {
+    // Get userId from the authenticated user
+    const userId = req.user!.userId;
+
     // Parse the request body
     const body = createRequestSchema.parse(req.body);
 
     // Insert the request document
-    const doc = { ...body.request, createdAt: new Date(), updatedAt: new Date() };
+    const doc = { userId, ...body.request, createdAt: new Date(), updatedAt: new Date() };
     const insertOneResult = await requestsCollection.insertOne(doc);
 
     // Insert the request node into the collection
@@ -51,12 +57,12 @@ const createRequest: RequestHandler = async (req, res) => {
     // Check if folder id is provided
     if (body.folderId)
         result = await collectionsCollection.updateOne(
-            { "_id": new ObjectId(body.collectionId), "children._id": body.folderId },
+            { "_id": new ObjectId(body.collectionId), userId, "children._id": body.folderId },
             { $push: { "children.$.children": requestNode } }
         );
     else
         result = await collectionsCollection.updateOne(
-            { _id: new ObjectId(body.collectionId) },
+            { _id: new ObjectId(body.collectionId), userId },
             { $push: { children: requestNode } }
         );
 
@@ -74,6 +80,9 @@ const createRequest: RequestHandler = async (req, res) => {
 
 /** Update an existing request */
 const updateRequest: RequestHandler = async (req, res) => {
+    // Get userId from the authenticated user
+    const userId = req.user!.userId;
+
     // Parse the request param for the request id
     const requestId = objectIdSchema.parse(req.params.requestId);
 
@@ -92,7 +101,7 @@ const updateRequest: RequestHandler = async (req, res) => {
 
     // Update the request document
     const updateResult = await requestsCollection.updateOne(
-        { _id: new ObjectId(requestId) },
+        { _id: new ObjectId(requestId), userId },
         { $set: requestUpdates }
     );
     if (updateResult.matchedCount === 0) throw new HttpError("Request not found", 404);
@@ -105,7 +114,7 @@ const updateRequest: RequestHandler = async (req, res) => {
         if (body.folderId === null) {
             // Update the request node at the root level
             result = await collectionsCollection.updateOne(
-                { "_id": new ObjectId(body.collectionId), "children._id": requestId },
+                { "_id": new ObjectId(body.collectionId), userId, "children._id": requestId },
                 {
                     $set: Object.keys(requestNodeUpdates).reduce((acc, key) => {
                         acc[`children.$.${key}`] = (requestNodeUpdates as any)[key];
@@ -116,7 +125,7 @@ const updateRequest: RequestHandler = async (req, res) => {
         } else {
             // Update the request node at the folder level
             result = await collectionsCollection.updateOne(
-                { _id: new ObjectId(body.collectionId) },
+                { _id: new ObjectId(body.collectionId), userId },
                 {
                     $set: Object.keys(requestNodeUpdates).reduce((acc, key) => {
                         acc[`children.$[folder].children.$[request].${key}`] = (
@@ -141,6 +150,9 @@ const updateRequest: RequestHandler = async (req, res) => {
 
 /** Delete a request */
 const deleteRequest: RequestHandler = async (req, res) => {
+    // Get userId from the authenticated user
+    const userId = req.user!.userId;
+
     // Parse the request param for the request id
     const requestId = objectIdSchema.parse(req.params.requestId);
 
@@ -149,7 +161,10 @@ const deleteRequest: RequestHandler = async (req, res) => {
     const folderId = req.query.folderId ? objectIdSchema.parse(req.query.folderId) : null;
 
     // Delete the request document
-    const deleteResult = await requestsCollection.deleteOne({ _id: new ObjectId(requestId) });
+    const deleteResult = await requestsCollection.deleteOne({
+        _id: new ObjectId(requestId),
+        userId
+    });
     if (deleteResult.deletedCount === 0) throw new HttpError("Request not found", 404);
 
     // Delete the request node from the collection
@@ -157,12 +172,12 @@ const deleteRequest: RequestHandler = async (req, res) => {
 
     if (folderId)
         result = await collectionsCollection.updateOne(
-            { "_id": new ObjectId(collectionId), "children._id": folderId },
+            { "_id": new ObjectId(collectionId), userId, "children._id": folderId },
             { $pull: { "children.$.children": { _id: requestId, type: "request" } } }
         );
     else
         result = await collectionsCollection.updateOne(
-            { _id: new ObjectId(collectionId) },
+            { _id: new ObjectId(collectionId), userId },
             { $pull: { children: { _id: requestId, type: "request" } } }
         );
 

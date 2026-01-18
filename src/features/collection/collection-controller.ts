@@ -21,9 +21,12 @@ import { objectIdSchema } from "../../utils/schema.js";
  */
 
 /** Get the collections */
-const getCollections: RequestHandler = async (_req, res) => {
+const getCollections: RequestHandler = async (req, res) => {
+    // Get userId from the authenticated user
+    const userId = req.user!.userId;
+
     // Find all the collections
-    const collections = await collectionsCollection.find().toArray();
+    const collections = await collectionsCollection.find({ userId }).toArray();
 
     res.status(200).json({
         status: "success",
@@ -34,11 +37,14 @@ const getCollections: RequestHandler = async (_req, res) => {
 
 /** Create a new collection */
 const createCollection: RequestHandler = async (req, res) => {
+    // Get userId from the authenticated user
+    const userId = req.user!.userId;
+
     // Parse the request body
     const body = createCollectionSchema.parse(req.body);
 
     // Insert the collection document
-    const doc = { name: body.name, type: "collection" as const, children: [] };
+    const doc = { userId, name: body.name, type: "collection" as const, children: [] };
     const insertOneResult = await collectionsCollection.insertOne(doc);
 
     res.status(201).json({
@@ -50,6 +56,9 @@ const createCollection: RequestHandler = async (req, res) => {
 
 /** Rename an existing collection */
 const renameCollection: RequestHandler = async (req, res) => {
+    // Get userId from the authenticated user
+    const userId = req.user!.userId;
+
     // Parse the request params for the collection id
     const collectionId = objectIdSchema.parse(req.params.collectionId);
 
@@ -58,7 +67,7 @@ const renameCollection: RequestHandler = async (req, res) => {
 
     // Update the collection
     const result = await collectionsCollection.updateOne(
-        { _id: new ObjectId(collectionId) },
+        { _id: new ObjectId(collectionId), userId },
         { $set: { name: body.newName } }
     );
     if (result.matchedCount === 0) throw new HttpError("Collection not found", 404);
@@ -71,12 +80,16 @@ const renameCollection: RequestHandler = async (req, res) => {
 
 /** Delete a collection */
 const deleteCollection: RequestHandler = async (req, res) => {
+    // Get userId from the authenticated user
+    const userId = req.user!.userId;
+
     // Parse the request params for the collection id
     const collectionId = objectIdSchema.parse(req.params.collectionId);
 
     // Delete the collection
     const collection = await collectionsCollection.findOneAndDelete({
-        _id: new ObjectId(collectionId)
+        _id: new ObjectId(collectionId),
+        userId
     });
     if (!collection) throw new HttpError("Collection not found", 404);
 
@@ -89,7 +102,8 @@ const deleteCollection: RequestHandler = async (req, res) => {
         else requestIds.push(new ObjectId(child._id));
     });
 
-    if (requestIds.length > 0) await requestsCollection.deleteMany({ _id: { $in: requestIds } });
+    if (requestIds.length > 0)
+        await requestsCollection.deleteMany({ _id: { $in: requestIds }, userId });
 
     res.status(200).json({
         status: "success",
@@ -104,6 +118,9 @@ const deleteCollection: RequestHandler = async (req, res) => {
 
 /** Create a new folder */
 const createFolder: RequestHandler = async (req, res) => {
+    // Get userId from the authenticated user
+    const userId = req.user!.userId;
+
     // Parse the request params for the collection id
     const collectionId = objectIdSchema.parse(req.params.collectionId);
 
@@ -117,8 +134,9 @@ const createFolder: RequestHandler = async (req, res) => {
         type: "folder" as const,
         children: []
     };
+
     const result = await collectionsCollection.updateOne(
-        { _id: new ObjectId(collectionId) },
+        { _id: new ObjectId(collectionId), userId },
         { $push: { children: folder } }
     );
     if (result.matchedCount === 0) throw new HttpError("Collection not found", 404);
@@ -132,6 +150,9 @@ const createFolder: RequestHandler = async (req, res) => {
 
 /** Rename a folder */
 const renameFolder: RequestHandler = async (req, res) => {
+    // Get userId from the authenticated user
+    const userId = req.user!.userId;
+
     // Parse the request params for the collection id and folder id
     const collectionId = objectIdSchema.parse(req.params.collectionId);
     const folderId = objectIdSchema.parse(req.params.folderId);
@@ -141,7 +162,7 @@ const renameFolder: RequestHandler = async (req, res) => {
 
     // Update the folder name
     const result = await collectionsCollection.updateOne(
-        { "_id": new ObjectId(collectionId), "children._id": folderId },
+        { "_id": new ObjectId(collectionId), userId, "children._id": folderId },
         { $set: { "children.$.name": body.newName } }
     );
     if (result.matchedCount === 0) throw new HttpError("Collection or Folder not found", 404);
@@ -154,12 +175,18 @@ const renameFolder: RequestHandler = async (req, res) => {
 
 /** Delete a folder */
 const deleteFolder: RequestHandler = async (req, res) => {
+    // Get userId from the authenticated user
+    const userId = req.user!.userId;
+
     // Parse the request params for the collection id and folder id
     const collectionId = objectIdSchema.parse(req.params.collectionId);
     const folderId = objectIdSchema.parse(req.params.folderId);
 
     // Find the collection
-    const collection = await collectionsCollection.findOne({ _id: new ObjectId(collectionId) });
+    const collection = await collectionsCollection.findOne({
+        _id: new ObjectId(collectionId),
+        userId
+    });
     if (!collection) throw new HttpError("Collection not found", 404);
 
     // Find the folder
@@ -170,11 +197,12 @@ const deleteFolder: RequestHandler = async (req, res) => {
 
     // Delete all the requests in the folder
     const requestIds = folder.children.map((request) => new ObjectId(request._id));
-    if (requestIds.length > 0) await requestsCollection.deleteMany({ _id: { $in: requestIds } });
+    if (requestIds.length > 0)
+        await requestsCollection.deleteMany({ _id: { $in: requestIds }, userId });
 
     // Delete the folder
     await collectionsCollection.updateOne(
-        { _id: new ObjectId(collectionId) },
+        { _id: new ObjectId(collectionId), userId },
         { $pull: { children: { _id: folderId, type: "folder" } } }
     );
 
