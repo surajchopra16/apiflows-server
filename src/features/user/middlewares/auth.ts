@@ -3,7 +3,7 @@ import { RequestHandler } from "express";
 
 import jwt from "jsonwebtoken";
 
-import { HttpError } from "../utils/httpError.js";
+import { HttpError } from "../../../utils/httpError.js";
 
 /**
  * Extend the Express Request type to include user information

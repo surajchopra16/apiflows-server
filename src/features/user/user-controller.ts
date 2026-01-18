@@ -43,9 +43,10 @@ const signup: RequestHandler = async (req, res) => {
 
     // Set the access token cookie
     res.cookie("access-token", accessToken, {
-        httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
+        httpOnly: true,
+        path: "/",
         maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
     });
 
@@ -61,7 +62,7 @@ const signup: RequestHandler = async (req, res) => {
 /** Log in an existing user */
 const login: RequestHandler = async (req, res) => {
     // Parse the request body
-    const body = signupSchema.parse(req.body);
+    const body = loginSchema.parse(req.body);
 
     // Find the user document
     const user = await usersCollection.findOne({ email: body.email });
@@ -80,9 +81,10 @@ const login: RequestHandler = async (req, res) => {
 
     // Set token access token cookie
     res.cookie("access-token", accessToken, {
-        httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
+        httpOnly: true,
+        path: "/",
         maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
     });
 
@@ -99,9 +101,10 @@ const login: RequestHandler = async (req, res) => {
 const logout: RequestHandler = async (_req, res) => {
     // Clear the access token cookie
     res.clearCookie("access-token", {
-        httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "lax"
+        sameSite: "lax",
+        httpOnly: true,
+        path: "/"
     });
 
     res.status(200).json({

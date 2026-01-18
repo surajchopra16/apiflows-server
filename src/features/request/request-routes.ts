@@ -1,7 +1,7 @@
 /** Imported modules */
 import { Router } from "express";
 
-import { authMiddleware } from "../../middlewares/auth.js";
+import { authMiddleware } from "../user/middlewares/auth.js";
 
 import { getRequest, createRequest, updateRequest, deleteRequest } from "./request-controller.js";
 
