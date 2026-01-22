@@ -3,6 +3,8 @@ import { RequestHandler } from "express";
 
 import jwt from "jsonwebtoken";
 
+import { AccessTokenPayload } from "../user-controller.js";
+
 import { HttpError } from "../../../utils/httpError.js";
 
 /**
@@ -12,7 +14,7 @@ import { HttpError } from "../../../utils/httpError.js";
 declare global {
     namespace Express {
         interface Request {
-            user?: { userId: string; email: string };
+            user?: { _id: string; email: string };
         }
     }
 }
@@ -30,13 +32,13 @@ const authMiddleware: RequestHandler = async (req, _res, next) => {
         if (!accessToken) throw new HttpError("Authentication required. Please log in.", 401);
 
         // Decode the access token
-        const decodedAccessToken = jwt.verify(accessToken, process.env.JWT_SECRET) as {
-            userId: string;
-            email: string;
-        };
+        const decodedAccessToken = jwt.verify(
+            accessToken,
+            process.env.JWT_SECRET
+        ) as AccessTokenPayload;
 
         // Attach user information to the request object
-        req.user = { userId: decodedAccessToken.userId, email: decodedAccessToken.email };
+        req.user = { _id: decodedAccessToken._id, email: decodedAccessToken.email };
 
         next();
     } catch (error) {

@@ -12,7 +12,7 @@ import { objectIdSchema } from "../../utils/schema.js";
 /** Get the request */
 const getRequest: RequestHandler = async (req, res) => {
     // Get userId from the authenticated user
-    const userId = req.user!.userId;
+    const userId = req.user!._id;
 
     // Parse the request param for the request id
     const requestId = objectIdSchema.parse(req.params.requestId);
@@ -34,7 +34,7 @@ const getRequest: RequestHandler = async (req, res) => {
 /** Create a new request */
 const createRequest: RequestHandler = async (req, res) => {
     // Get userId from the authenticated user
-    const userId = req.user!.userId;
+    const userId = req.user!._id;
 
     // Parse the request body
     const body = createRequestSchema.parse(req.body);
@@ -81,7 +81,7 @@ const createRequest: RequestHandler = async (req, res) => {
 /** Update an existing request */
 const updateRequest: RequestHandler = async (req, res) => {
     // Get userId from the authenticated user
-    const userId = req.user!.userId;
+    const userId = req.user!._id;
 
     // Parse the request param for the request id
     const requestId = objectIdSchema.parse(req.params.requestId);
@@ -151,7 +151,7 @@ const updateRequest: RequestHandler = async (req, res) => {
 /** Delete a request */
 const deleteRequest: RequestHandler = async (req, res) => {
     // Get userId from the authenticated user
-    const userId = req.user!.userId;
+    const userId = req.user!._id;
 
     // Parse the request param for the request id
     const requestId = objectIdSchema.parse(req.params.requestId);

@@ -23,7 +23,7 @@ import { objectIdSchema } from "../../utils/schema.js";
 /** Get the collections */
 const getCollections: RequestHandler = async (req, res) => {
     // Get userId from the authenticated user
-    const userId = req.user!.userId;
+    const userId = req.user!._id;
 
     // Find all the collections
     const collections = await collectionsCollection.find({ userId }).toArray();
@@ -38,7 +38,7 @@ const getCollections: RequestHandler = async (req, res) => {
 /** Create a new collection */
 const createCollection: RequestHandler = async (req, res) => {
     // Get userId from the authenticated user
-    const userId = req.user!.userId;
+    const userId = req.user!._id;
 
     // Parse the request body
     const body = createCollectionSchema.parse(req.body);
@@ -57,7 +57,7 @@ const createCollection: RequestHandler = async (req, res) => {
 /** Rename an existing collection */
 const renameCollection: RequestHandler = async (req, res) => {
     // Get userId from the authenticated user
-    const userId = req.user!.userId;
+    const userId = req.user!._id;
 
     // Parse the request params for the collection id
     const collectionId = objectIdSchema.parse(req.params.collectionId);
@@ -81,7 +81,7 @@ const renameCollection: RequestHandler = async (req, res) => {
 /** Delete a collection */
 const deleteCollection: RequestHandler = async (req, res) => {
     // Get userId from the authenticated user
-    const userId = req.user!.userId;
+    const userId = req.user!._id;
 
     // Parse the request params for the collection id
     const collectionId = objectIdSchema.parse(req.params.collectionId);
@@ -119,7 +119,7 @@ const deleteCollection: RequestHandler = async (req, res) => {
 /** Create a new folder */
 const createFolder: RequestHandler = async (req, res) => {
     // Get userId from the authenticated user
-    const userId = req.user!.userId;
+    const userId = req.user!._id;
 
     // Parse the request params for the collection id
     const collectionId = objectIdSchema.parse(req.params.collectionId);
@@ -151,7 +151,7 @@ const createFolder: RequestHandler = async (req, res) => {
 /** Rename a folder */
 const renameFolder: RequestHandler = async (req, res) => {
     // Get userId from the authenticated user
-    const userId = req.user!.userId;
+    const userId = req.user!._id;
 
     // Parse the request params for the collection id and folder id
     const collectionId = objectIdSchema.parse(req.params.collectionId);
@@ -176,7 +176,7 @@ const renameFolder: RequestHandler = async (req, res) => {
 /** Delete a folder */
 const deleteFolder: RequestHandler = async (req, res) => {
     // Get userId from the authenticated user
-    const userId = req.user!.userId;
+    const userId = req.user!._id;
 
     // Parse the request params for the collection id and folder id
     const collectionId = objectIdSchema.parse(req.params.collectionId);

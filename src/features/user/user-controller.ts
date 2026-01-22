@@ -8,9 +8,36 @@ import { loginSchema, signupSchema, usersCollection } from "./user-model.js";
 
 import { HttpError } from "../../utils/httpError.js";
 
+/** Access token payload type */
+type AccessTokenPayload = { _id: string; email: string };
+
 /**
  * ==================== User controller ====================>
  */
+
+/** Get the current user status */
+const status: RequestHandler = async (req, res) => {
+    // Get the access token from cookies
+    const accessToken = req.cookies["access-token"];
+
+    // Check if the access token is present
+    if (!accessToken)
+        return res.status(200).json({
+            status: "success",
+            data: { user: null }
+        });
+
+    // Decode the access token
+    const decodedAccessToken = jwt.verify(
+        accessToken,
+        process.env.JWT_SECRET
+    ) as AccessTokenPayload;
+
+    res.status(200).json({
+        status: "success",
+        data: { user: { _id: decodedAccessToken._id, email: decodedAccessToken.email } }
+    });
+};
 
 /** Sign up a new user */
 const signup: RequestHandler = async (req, res) => {
@@ -36,7 +63,7 @@ const signup: RequestHandler = async (req, res) => {
 
     // Generate the access token
     const accessToken = jwt.sign(
-        { userId: insertOneResult.insertedId.toString(), email: body.email },
+        { _id: insertOneResult.insertedId.toString(), email: body.email },
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRES_IN } as jwt.SignOptions
     );
@@ -74,7 +101,7 @@ const login: RequestHandler = async (req, res) => {
 
     // Generate the access token
     const accessToken = jwt.sign(
-        { userId: user._id.toString(), email: user.email },
+        { _id: user._id.toString(), email: user.email },
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRES_IN } as jwt.SignOptions
     );
@@ -113,4 +140,4 @@ const logout: RequestHandler = async (_req, res) => {
     });
 };
 
-export { signup, login, logout };
+export { AccessTokenPayload, status, signup, login, logout };
