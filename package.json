@@ -5,7 +5,7 @@
     "main": "dist/server.js",
     "scripts": {
         "build": "tsc",
-        "start": "node dist/server.js",
+        "start": "tsc && node dist/server.js",
         "dev": "nodemon",
         "format": "npx prettier --write ."
     },
