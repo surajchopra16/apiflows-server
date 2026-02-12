@@ -15,6 +15,6 @@ userRouter.get("/status", status);
 userRouter.post("/guest", guest);
 userRouter.post("/signup", signup);
 userRouter.post("/login", login);
-userRouter.delete("/logout", authMiddleware, logout);
+userRouter.delete("/logout", logout);
 
 export { userRouter };

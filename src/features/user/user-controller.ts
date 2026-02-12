@@ -22,11 +22,7 @@ const status: RequestHandler = async (req, res) => {
     const accessToken = req.cookies["access-token"];
 
     // Check if the access token is present
-    if (!accessToken)
-        return res.status(200).json({
-            status: "success",
-            data: { user: null }
-        });
+    if (!accessToken) return res.status(200).json({ status: "success", data: { user: null } });
 
     // Decode the access token
     const decodedAccessToken = jwt.verify(
@@ -70,7 +66,14 @@ const guest: RequestHandler = async (_req, res) => {
     res.status(200).json({
         status: "success",
         message: "Guest session created successfully",
-        data: { user: { role: "guest", _id: guestId, email: guestId, createdAt: new Date() } }
+        data: {
+            user: {
+                role: "guest",
+                _id: guestId,
+                email: guestId,
+                createdAt: new Date()
+            }
+        }
     });
 };
 
@@ -116,7 +119,12 @@ const signup: RequestHandler = async (req, res) => {
         status: "success",
         message: "User account created successfully",
         data: {
-            user: { _id: insertOneResult.insertedId, email: body.email, createdAt: doc.createdAt }
+            user: {
+                role: "user",
+                _id: insertOneResult.insertedId,
+                email: body.email,
+                createdAt: doc.createdAt
+            }
         }
     });
 };
@@ -154,7 +162,12 @@ const login: RequestHandler = async (req, res) => {
         status: "success",
         message: "User logged in successfully",
         data: {
-            user: { role: "user", _id: user._id, email: user.email, createdAt: user.createdAt }
+            user: {
+                role: "user",
+                _id: user._id,
+                email: user.email,
+                createdAt: user.createdAt
+            }
         }
     });
 };
