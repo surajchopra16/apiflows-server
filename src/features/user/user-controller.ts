@@ -2,6 +2,7 @@
 import { RequestHandler } from "express";
 
 import bcrypt from "bcrypt";
+import { randomUUID } from "crypto";
 import jwt from "jsonwebtoken";
 
 import { loginSchema, signupSchema, usersCollection } from "./user-model.js";
@@ -9,7 +10,7 @@ import { loginSchema, signupSchema, usersCollection } from "./user-model.js";
 import { HttpError } from "../../utils/httpError.js";
 
 /** Access token payload type */
-type AccessTokenPayload = { _id: string; email: string };
+type AccessTokenPayload = { role: "user" | "guest"; _id: string; email: string };
 
 /**
  * ==================== User controller ====================>
@@ -35,7 +36,41 @@ const status: RequestHandler = async (req, res) => {
 
     res.status(200).json({
         status: "success",
-        data: { user: { _id: decodedAccessToken._id, email: decodedAccessToken.email } }
+        data: {
+            user: {
+                role: decodedAccessToken.role,
+                _id: decodedAccessToken._id,
+                email: decodedAccessToken.email
+            }
+        }
+    });
+};
+
+/** Create a guest user session */
+const guest: RequestHandler = async (_req, res) => {
+    // Generate a unique guest ID
+    const guestId = `guest-${randomUUID()}`;
+
+    // Generate the access token for the guest user
+    const accessToken = jwt.sign(
+        { role: "guest", _id: guestId, email: guestId },
+        process.env.JWT_SECRET,
+        { expiresIn: "7d" } as jwt.SignOptions
+    );
+
+    // Set the access token cookie
+    res.cookie("access-token", accessToken, {
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        httpOnly: true,
+        path: "/",
+        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
+    res.status(200).json({
+        status: "success",
+        message: "Guest session created successfully",
+        data: { user: { role: "guest", _id: guestId, email: guestId, createdAt: new Date() } }
     });
 };
 
@@ -63,7 +98,7 @@ const signup: RequestHandler = async (req, res) => {
 
     // Generate the access token
     const accessToken = jwt.sign(
-        { _id: insertOneResult.insertedId.toString(), email: body.email },
+        { role: "user", _id: insertOneResult.insertedId.toString(), email: body.email },
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRES_IN } as jwt.SignOptions
     );
@@ -101,7 +136,7 @@ const login: RequestHandler = async (req, res) => {
 
     // Generate the access token
     const accessToken = jwt.sign(
-        { _id: user._id.toString(), email: user.email },
+        { role: "user", _id: user._id.toString(), email: user.email },
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRES_IN } as jwt.SignOptions
     );
@@ -119,7 +154,7 @@ const login: RequestHandler = async (req, res) => {
         status: "success",
         message: "User logged in successfully",
         data: {
-            user: { _id: user._id, email: user.email, createdAt: user.createdAt }
+            user: { role: "user", _id: user._id, email: user.email, createdAt: user.createdAt }
         }
     });
 };
@@ -140,4 +175,4 @@ const logout: RequestHandler = async (_req, res) => {
     });
 };
 
-export { AccessTokenPayload, status, signup, login, logout };
+export { AccessTokenPayload, status, guest, signup, login, logout };

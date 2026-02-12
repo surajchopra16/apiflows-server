@@ -14,7 +14,7 @@ import { HttpError } from "../../../utils/httpError.js";
 declare global {
     namespace Express {
         interface Request {
-            user?: { _id: string; email: string };
+            user?: { role: "user" | "guest"; _id: string; email: string };
         }
     }
 }
@@ -38,7 +38,11 @@ const authMiddleware: RequestHandler = async (req, _res, next) => {
         ) as AccessTokenPayload;
 
         // Attach user information to the request object
-        req.user = { _id: decodedAccessToken._id, email: decodedAccessToken.email };
+        req.user = {
+            role: decodedAccessToken.role,
+            _id: decodedAccessToken._id,
+            email: decodedAccessToken.email
+        };
 
         next();
     } catch (error) {
