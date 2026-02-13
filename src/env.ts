@@ -20,7 +20,10 @@ const envSchema = object({
 
     /** JWT */
     JWT_SECRET: string(),
-    JWT_EXPIRES_IN: string()
+    JWT_EXPIRES_IN: string(),
+
+    /** Gemini */
+    GOOGLE_API_KEY: string()
 });
 
 /**
