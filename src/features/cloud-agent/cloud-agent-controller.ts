@@ -1,9 +1,17 @@
 /** Imported modules */
 import { RequestHandler } from "express";
 
+import { geminiClient } from "../../gemini.js";
 import { executeUpstreamRequest } from "./cloud-agent.js";
+import { ThinkingLevel } from "@google/genai";
+import { toJSONSchema } from "zod";
 
-import { requestSchema } from "./cloud-agent-model.js";
+import {
+    AUDIT_REQUEST_SYSTEM_PROMPT,
+    auditRequestSchema,
+    auditResponseSchema,
+    requestSchema
+} from "./cloud-agent-model.js";
 
 import { HttpError } from "../../utils/httpError.js";
 
@@ -45,4 +53,34 @@ const sendRequest: RequestHandler = async (req, res) => {
     });
 };
 
-export { sendRequest };
+/** Audit the request */
+const auditRequest: RequestHandler = async (req, res) => {
+    /** Parse the request body */
+    const body = auditRequestSchema.parse(req.body);
+
+    /** Generate the audit response using Gemini */
+    const response = await geminiClient.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: JSON.stringify(body),
+        config: {
+            systemInstruction: AUDIT_REQUEST_SYSTEM_PROMPT,
+            responseMimeType: "application/json",
+            responseJsonSchema: toJSONSchema(auditResponseSchema, { target: "draft-2020-12" }),
+            thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }
+        }
+    });
+
+    const text = response.text;
+    if (text === undefined) throw new HttpError("Failed to generate audit response", 500);
+
+    /** Parse the audit response */
+    const data = auditResponseSchema.parse(JSON.parse(text));
+
+    res.status(200).json({
+        status: "success",
+        message: "Audit report generated successfully",
+        data: data
+    });
+};
+
+export { sendRequest, auditRequest };
