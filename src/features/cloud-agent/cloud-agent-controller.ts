@@ -66,7 +66,9 @@ const auditRequest: RequestHandler = async (req, res) => {
             systemInstruction: AUDIT_REQUEST_SYSTEM_PROMPT,
             responseMimeType: "application/json",
             responseJsonSchema: toJSONSchema(auditResponseSchema, { target: "draft-2020-12" }),
-            thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }
+            thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+            temperature: 0.7,
+            seed: 50
         }
     });
 
