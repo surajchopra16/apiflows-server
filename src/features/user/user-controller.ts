@@ -57,7 +57,7 @@ const guest: RequestHandler = async (_req, res) => {
     // Set the access token cookie
     res.cookie("access-token", accessToken, {
         secure: process.env.NODE_ENV === "production",
-        sameSite: "none",
+        sameSite: "lax",
         httpOnly: true,
         path: "/",
         maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
@@ -109,7 +109,7 @@ const signup: RequestHandler = async (req, res) => {
     // Set the access token cookie
     res.cookie("access-token", accessToken, {
         secure: process.env.NODE_ENV === "production",
-        sameSite: "none",
+        sameSite: "lax",
         httpOnly: true,
         path: "/",
         maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
@@ -152,7 +152,7 @@ const login: RequestHandler = async (req, res) => {
     // Set token access token cookie
     res.cookie("access-token", accessToken, {
         secure: process.env.NODE_ENV === "production",
-        sameSite: "none",
+        sameSite: "lax",
         httpOnly: true,
         path: "/",
         maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
@@ -177,7 +177,7 @@ const logout: RequestHandler = async (_req, res) => {
     // Clear the access token cookie
     res.clearCookie("access-token", {
         secure: process.env.NODE_ENV === "production",
-        sameSite: "none",
+        sameSite: "lax",
         httpOnly: true,
         path: "/"
     });

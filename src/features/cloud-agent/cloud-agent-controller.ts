@@ -3,7 +3,6 @@ import { RequestHandler } from "express";
 
 import { geminiClient } from "../../gemini.js";
 import { executeUpstreamRequest } from "./cloud-agent.js";
-import { ThinkingLevel } from "@google/genai";
 import { toJSONSchema } from "zod";
 
 import {
@@ -60,14 +59,13 @@ const auditRequest: RequestHandler = async (req, res) => {
 
     /** Generate the audit response using Gemini */
     const response = await geminiClient.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-3.5-flash-lite",
         contents: JSON.stringify(body),
         config: {
             systemInstruction: AUDIT_REQUEST_SYSTEM_PROMPT,
             responseMimeType: "application/json",
-            responseJsonSchema: toJSONSchema(auditResponseSchema, { target: "draft-2020-12" }),
-            thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
-            temperature: 0.7,
+            responseJsonSchema: toJSONSchema(auditResponseSchema),
+            temperature: 0.25,
             seed: 50
         }
     });

@@ -5,7 +5,7 @@
     "main": "dist/server.js",
     "scripts": {
         "build": "tsc",
-        "start": "node dist/server.js",
+        "start": "node --env-file=.env dist/server.js",
         "dev": "nodemon",
         "format": "npx prettier --write ."
     },
@@ -17,7 +17,7 @@
         "node": "24.x"
     },
     "dependencies": {
-        "@google/genai": "^1.41.0",
+        "@google/genai": "^2.13.0",
         "bcrypt": "^6.0.0",
         "content-type": "^1.0.5",
         "cookie-parser": "^1.4.7",
